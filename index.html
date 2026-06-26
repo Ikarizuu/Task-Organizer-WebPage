@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Planner</title>
+
+  <!--Programmed By Ikarizuu-->
+  
+  <style>
+    :root {
+      --primary: #03631b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 800px;
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 0;
+      color: var(--primary);
+    }
+
+    .input-section {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"] {
+      flex: 2;
+      min-width: 200px;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--primary);
+    }
+
+    select {
+      flex: 1;
+      min-width: 150px;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      background: white;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.7;
+    }
+
+    .task-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      transition: transform 0.2s;
+    }
+
+    .task-item.completed .task-text {
+      text-decoration: line-through;
+      color: #94a3b8;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-left: 10px;
+    }
+
+    .priority-high { color: #ef4444; }
+    .priority-medium { color: #cec003; }
+    .priority-low { color: #3fa802; }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-complete {
+      background: #22c55e;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+
+    .btn-delete {
+      background: #ef4444;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #94a3b8;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <h1>Task Organizer</h1>
+    <div class="input-section">
+      <input type="text" id="taskInput" placeholder="What needs to be done?">
+      <select id="priorityInput">
+        <option value="high">High Priority</option>
+        <option value="medium" selected>Medium Priority</option>
+        <option value="low">Low Priority</option>
+      </select>
+      <button onclick="addTask()">Add Task</button>
+    </div>
+
+    <ul id="taskList" class="task-list"></ul>
+    <div id="emptyState" class="empty-state">No tasks remaining. Add one to begin!</div>
+  </div>
+
+  <script>
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+    //save task
+    function saveTasks() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      renderTasks();
+    }
+
+    function addTask() {
+      const taskText = document.getElementById('taskInput').value.trim();
+      const priority = document.getElementById('priorityInput').value;
+
+      if (taskText === '') {
+        alert('Please enter a valid task description.');
+        return;
+      }
+
+      const newTask = {
+        id: Date.now(),
+        text: taskText,
+        priority: priority,
+        completed: false
+      };
+
+      tasks.push(newTask);
+      document.getElementById('taskInput').value = '';
+      saveTasks();
+    }
+
+    //toggle complete
+    function toggleComplete(id) {
+      tasks = tasks.map(task => {
+        if (task.id === id) {
+          return { ...task, completed: !task.completed };
+        }
+        return task;
+      });
+      saveTasks();
+    }
+
+    //deletes task
+    function deleteTask(id) {
+      tasks = tasks.filter(task => task.id !== id);
+      saveTasks();
+    }
+
+    function renderTasks() {
+      const taskList = document.getElementById('taskList');
+      const emptyState = document.getElementById('emptyState');
+      
+      taskList.innerHTML = '';
+
+      //Sort priorities so high shows first
+      const priorityWeight = { high: 3, medium: 2, low: 1 };
+      tasks.sort((a, b) => priorityWeight[b.priority] - priorityWeight[a.priority]);
+
+      if (tasks.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      } else {
+        emptyState.style.display = 'none';
+      }
+
+      tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.className = `task-item ${task.completed ? 'completed' : ''}`;
+
+        li.innerHTML = `
+          <div>
+            <span class="task-text">${task.text}</span>
+            <span class="badge priority-${task.priority}">${task.priority}</span>
+          </div>
+          <div class="actions">
+            <button class="btn-complete" onclick="toggleComplete(${task.id})">
+              ${task.completed ? 'Undo' : 'Done'}
+            </button>
+            <button class="btn-delete" onclick="deleteTask(${task.id})">Remove</button>
+          </div>
+        `;
+        taskList.appendChild(li);
+      });
+    }
+
+    //Initial render
+    renderTasks();
+  </script>
+</body>
+</html>
